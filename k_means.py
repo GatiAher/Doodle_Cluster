@@ -1,6 +1,7 @@
 import numpy as np
+from tqdm import tqdm
 
-class Kmeans:
+class KMeans:
     """
     Kmeans class.
 
@@ -14,7 +15,7 @@ class Kmeans:
         self.max_iter = max_iter
         self.random_state = random_state
 
-    def initializ_centroids(self, X):
+    def initialise_centroids(self, X):
         """
         Chooses n_cluster centroids from the data.
 
@@ -61,8 +62,8 @@ class Kmeans:
         """
         distance = np.zeros((X.shape[0], self.n_cluster))
         for k in range(self.n_cluster):
-            row_norm = norm(X - self.centroids[k, :], axis=1)
-            distance[:, k] = row_norm
+            row_norm = np.linalg.norm(X - self.centroids[k, :], axis=1)
+            distance[:, k] = np.square(row_norm)
         return distance
 
     def find_closest_clusters(self, X):
@@ -92,10 +93,10 @@ class Kmeans:
             centroids
         """
         if labels is None:
-            labels = self.find_closest_cluster(X)
+            labels = self.find_closest_clusters(X)
         distance = np.zeros(X.shape[0])
         for k in range(self.n_cluster):
-            dist = norm(X[labels == k] - self.centroids[k], axis=1)
+            dist = np.linalg.norm(X[labels == k] - self.centroids[k], axis=1)
             distance[labels == k] = dist
         return np.sum(np.square(distance))
     
@@ -111,14 +112,28 @@ class Kmeans:
             Float: Sum of squares error for the passed points and final
             centroids
         """
-        self.centroids = self.initializ_centroids(X)
-        for i in range(self.max_iter):
+        self.centroids = self.initialise_centroids(X)
+        for i in tqdm(range(self.max_iter)):
             labels = self.find_closest_clusters(X)
             old_centroids = self.centroids
             self.centroids = self.compute_centroids(X, labels)
             if np.all(old_centroids == self.centroids):
                 break
         return self.compute_sse(X)
+
+    def classify_centroids(self, X, class_labels):
+        centroid_labels = np.zeros(self.n_cluster)
+        closest_clusters = self.find_closest_clusters(X)
+        for k in range(self.n_cluster):
+            print(class_labels)
+            print(class_labels.shape)
+            print(type(class_labels[0]))
+            input()
+            counts = np.bincount(class_labels[closest_clusters == k])
+            print(f"{max(counts)} out of {sum(counts)} assigned points.")
+            print(f"{max(counts) / sum(counts)}")
+            centroid_labels[k] = np.argmax(counts)
+        return centroid_labels
     
     def __call__(self, X):
         """
